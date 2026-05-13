@@ -8,16 +8,29 @@ import {
   AlertCircle,
   MoreVertical,
   Package,
-  ArrowUpDown
+  ArrowUpDown,
+  Tag,
+  ChevronDown
 } from 'lucide-react';
 import { useFirestoreCollection, useFirestoreActions } from '../hooks/useFirestore';
-import { Product } from '../types';
+import { Product, Category } from '../types';
 import { Modal, Button, Input } from '../components/UI';
 import { cn } from '../lib/utils';
-import { orderBy } from 'firebase/firestore';
+import { orderBy, where } from 'firebase/firestore';
 
 export default function Inventory() {
-  const { data: products, loading } = useFirestoreCollection<Product>('products', [orderBy('name')]);
+  const [selectedCategoryId, setSelectedCategoryId] = useState<string>('');
+  
+  const productsQuery = useMemo(() => {
+    const q = [orderBy('name')];
+    if (selectedCategoryId && selectedCategoryId !== 'all') {
+      q.push(where('category', '==', selectedCategoryId));
+    }
+    return q;
+  }, [selectedCategoryId]);
+
+  const { data: products, loading } = useFirestoreCollection<Product>('products', productsQuery);
+  const { data: categories } = useFirestoreCollection<Category>('categories', [orderBy('name')]);
   const { add, update, remove } = useFirestoreActions('products');
 
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -84,15 +97,33 @@ export default function Inventory() {
       </div>
 
       <div className="flex flex-col md:flex-row gap-4 items-center justify-between bg-white p-4 rounded-xl border border-slate-200">
-        <div className="relative w-full md:w-96">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-          <input 
-            type="text"
-            placeholder="Search products, SKU..."
-            className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg outline-hidden focus:ring-2 focus:ring-blue-100 transition-all font-sans"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
+        <div className="flex flex-1 flex-col md:flex-row gap-4 w-full md:w-auto">
+          <div className="relative w-full md:w-64">
+            <Tag className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+            <select
+              className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg outline-hidden focus:ring-2 focus:ring-blue-100 transition-all font-sans appearance-none text-slate-900"
+              value={selectedCategoryId}
+              onChange={(e) => setSelectedCategoryId(e.target.value)}
+            >
+              <option value="">Select Category...</option>
+              <option value="all">All Categories</option>
+              {categories.map(c => (
+                <option key={c.id} value={c.id}>{c.name}</option>
+              ))}
+            </select>
+            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" size={16} />
+          </div>
+
+          <div className="relative w-full md:w-80">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+            <input 
+              type="text"
+              placeholder="Search products, SKU..."
+              className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg outline-hidden focus:ring-2 focus:ring-blue-100 transition-all font-sans"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
         </div>
         <div className="flex items-center gap-2 w-full md:w-auto">
           <Button variant="secondary" size="sm">
@@ -125,6 +156,13 @@ export default function Inventory() {
                     <td colSpan={5} className="px-6 py-4 h-16 bg-slate-50/30"></td>
                   </tr>
                 ))
+              ) : !selectedCategoryId ? (
+                <tr>
+                  <td colSpan={5} className="px-6 py-12 text-center text-slate-400">
+                    <Tag size={48} className="mx-auto mb-4 opacity-20" />
+                    Please select a category to view inventory
+                  </td>
+                </tr>
               ) : filteredProducts.length === 0 ? (
                 <tr>
                   <td colSpan={5} className="px-6 py-12 text-center text-slate-400">
@@ -148,7 +186,7 @@ export default function Inventory() {
                     </td>
                     <td className="px-6 py-4">
                       <span className="px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-600 text-xs font-medium">
-                        {product.category || 'Uncategorized'}
+                        {categories.find(c => c.id === product.category)?.name || 'Uncategorized'}
                       </span>
                     </td>
                     <td className="px-6 py-4">
@@ -214,12 +252,23 @@ export default function Inventory() {
               defaultValue={editingProduct?.sku} 
               placeholder="SKU-001"
             />
-            <Input 
-              label="Category" 
-              name="category" 
-              defaultValue={editingProduct?.category} 
-              placeholder="Electronics"
-            />
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium text-slate-700">Category</label>
+              <div className="relative">
+                <select
+                  name="category"
+                  required
+                  defaultValue={editingProduct?.category}
+                  className="w-full pl-3 pr-10 py-2 bg-slate-50 border border-slate-200 rounded-lg outline-hidden focus:ring-2 focus:ring-blue-100 transition-all font-sans appearance-none"
+                >
+                  <option value="">Select Category</option>
+                  {categories.map(c => (
+                    <option key={c.id} value={c.id}>{c.name}</option>
+                  ))}
+                </select>
+                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" size={16} />
+              </div>
+            </div>
           </div>
           <div className="grid grid-cols-2 gap-4">
             <Input 

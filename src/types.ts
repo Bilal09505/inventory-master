@@ -30,6 +30,13 @@ export interface Vendor {
   createdAt: string;
 }
 
+export interface Category {
+  id: string;
+  name: string;
+  description?: string;
+  createdAt: string;
+}
+
 export interface Product {
   id: string;
   hsnCode?: string;

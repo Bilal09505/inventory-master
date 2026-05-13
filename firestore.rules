@@ -93,6 +93,11 @@ service cloud.firestore {
              data.date is string;
     }
 
+    function isValidCategory(data) {
+      return data.keys().hasAll(['name']) &&
+             data.name is string && data.name.size() > 0;
+    }
+
     // --- Collections ---
 
     match /users/{userId} {
@@ -142,6 +147,13 @@ service cloud.firestore {
       allow create: if isStaff() && isValidId(saleId) && isValidSale(incoming()) &&
                     existsAfter(/databases/$(database)/documents/products/$(incoming().productId));
       allow update: if isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    match /categories/{categoryId} {
+      allow read: if isVerified();
+      allow create: if isManager() && isValidId(categoryId) && isValidCategory(incoming());
+      allow update: if isManager() && isValidCategory(incoming());
       allow delete: if isAdmin();
     }
   }

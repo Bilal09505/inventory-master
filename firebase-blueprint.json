@@ -98,6 +98,18 @@
         "createdAt": { "type": "string", "format": "date-time" }
       },
       "required": ["productId", "units", "price", "amount", "date"]
+    },
+    "Category": {
+      "title": "Category",
+      "description": "Product category information",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "description": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["name"]
     }
   },
   "firestore": {
@@ -124,6 +136,10 @@
     "sales": {
       "schema": "Sale",
       "description": "Collection of sales records"
+    },
+    "categories": {
+      "schema": "Category",
+      "description": "Collection of product categories"
     }
   }
 }

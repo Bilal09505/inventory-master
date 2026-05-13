@@ -1,18 +1,24 @@
 import React, { useState } from 'react';
 import { Plus, ShoppingCart, Search, Package, User } from 'lucide-react';
 import { useFirestoreCollection, useFirestoreActions } from '../hooks/useFirestore';
-import { Purchase, Product, Vendor } from '../types';
+import { Purchase, Product, Vendor, Category } from '../types';
 import { Modal, Button, Input } from '../components/UI';
 import { orderBy, limit } from 'firebase/firestore';
+import { ChevronDown, Tag } from 'lucide-react';
 
 export default function Purchases() {
   const { data: purchases, loading } = useFirestoreCollection<Purchase>('purchases', [orderBy('createdAt', 'desc'), limit(50)]);
+  const { data: categories } = useFirestoreCollection<Category>('categories', [orderBy('name')]);
   const { data: products } = useFirestoreCollection<Product>('products', [orderBy('name')]);
   const { data: vendors } = useFirestoreCollection<Vendor>('vendors', [orderBy('name')]);
   const { recordTransaction } = useFirestoreActions('purchases');
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [selectedCategoryId, setSelectedCategoryId] = useState('');
+  const [selectedProductId, setSelectedProductId] = useState('');
+
+  const filteredProducts = products.filter(p => !selectedCategoryId || p.category === selectedCategoryId);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -83,16 +89,54 @@ export default function Purchases() {
         </table>
       </div>
 
-      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="Record New Purchase">
+      <Modal isOpen={isModalOpen} onClose={() => { setIsModalOpen(false); setSelectedCategoryId(''); setSelectedProductId(''); }} title="Record New Purchase">
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-1.5">
+            <label className="text-sm font-medium text-slate-700">Select Category</label>
+            <div className="relative">
+              <Tag className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+              <select
+                className="w-full pl-10 pr-10 py-2.5 bg-white border border-slate-200 rounded-xl focus:border-blue-500 outline-hidden focus:ring-2 focus:ring-blue-100 appearance-none"
+                value={selectedCategoryId}
+                onChange={(e) => {
+                  setSelectedCategoryId(e.target.value);
+                  setSelectedProductId(''); // Reset product when category changes
+                }}
+              >
+                <option value="">All Categories</option>
+                {categories.map(c => (
+                  <option key={c.id} value={c.id}>{c.name}</option>
+                ))}
+              </select>
+              <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" size={16} />
+            </div>
+          </div>
+
+          <div className="space-y-1.5">
             <label className="text-sm font-medium text-slate-700">Select Product</label>
-            <select name="productId" required className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl focus:border-blue-500 outline-hidden focus:ring-2 focus:ring-blue-100">
-              <option value="">Choose a product...</option>
-              {products.map(p => (
-                <option key={p.id} value={p.id}>{p.name} (Stock: {p.stock})</option>
-              ))}
-            </select>
+            <div className="relative">
+              <Package className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+              <select 
+                name="productId" 
+                required 
+                className="w-full pl-10 pr-10 py-2.5 bg-white border border-slate-200 rounded-xl focus:border-blue-500 outline-hidden focus:ring-2 focus:ring-blue-100 appearance-none"
+                value={selectedProductId}
+                onChange={(e) => setSelectedProductId(e.target.value)}
+                disabled={!selectedCategoryId}
+              >
+                {!selectedCategoryId ? (
+                   <option value="">Please select a category first...</option>
+                ) : (
+                  <>
+                    <option value="">Choose a product...</option>
+                    {filteredProducts.map(p => (
+                      <option key={p.id} value={p.id}>{p.name} (Stock: {p.stock})</option>
+                    ))}
+                  </>
+                )}
+              </select>
+              <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" size={16} />
+            </div>
           </div>
           <div className="space-y-1.5">
             <label className="text-sm font-medium text-slate-700">Select Vendor</label>

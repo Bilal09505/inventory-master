@@ -3,6 +3,7 @@ import { NavLink, useNavigate, Outlet } from 'react-router-dom';
 import { 
   LayoutDashboard, 
   Package, 
+  Tag,
   Users, 
   Truck, 
   ShoppingCart, 
@@ -20,6 +21,7 @@ import { motion, AnimatePresence } from 'motion/react';
 const navItems = [
   { icon: LayoutDashboard, label: 'Dashboard', path: '/' },
   { icon: Package, label: 'Inventory', path: '/inventory' },
+  { icon: Tag, label: 'Categories', path: '/categories' },
   { icon: Users, label: 'Customers', path: '/customers' },
   { icon: Truck, label: 'Vendors', path: '/vendors' },
   { icon: ShoppingCart, label: 'Purchases', path: '/purchases' },

@@ -1,22 +1,26 @@
 import React, { useState } from 'react';
 import { Plus, TrendingUp, ShoppingCart, User, Package, AlertTriangle } from 'lucide-react';
 import { useFirestoreCollection, useFirestoreActions } from '../hooks/useFirestore';
-import { Sale, Product, Customer } from '../types';
+import { Sale, Product, Customer, Category } from '../types';
 import { Modal, Button, Input } from '../components/UI';
 import { cn } from '../lib/utils';
 import { orderBy, limit } from 'firebase/firestore';
+import { ChevronDown, Tag } from 'lucide-react';
 
 export default function Sales() {
   const { data: sales, loading } = useFirestoreCollection<Sale>('sales', [orderBy('createdAt', 'desc'), limit(50)]);
+  const { data: categories } = useFirestoreCollection<Category>('categories', [orderBy('name')]);
   const { data: products } = useFirestoreCollection<Product>('products', [orderBy('name')]);
   const { data: customers } = useFirestoreCollection<Customer>('customers', [orderBy('name')]);
   const { recordTransaction } = useFirestoreActions('sales');
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [selectedCategoryId, setSelectedCategoryId] = useState('');
   const [selectedProductId, setSelectedProductId] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
 
+  const filteredProducts = products.filter(p => !selectedCategoryId || p.category === selectedCategoryId);
   const selectedProduct = products.find(p => p.id === selectedProductId);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -110,24 +114,56 @@ export default function Sales() {
         </table>
       </div>
 
-      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="Create New Sale">
+      <Modal isOpen={isModalOpen} onClose={() => { setIsModalOpen(false); setSelectedCategoryId(''); setSelectedProductId(''); }} title="Create New Sale">
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-1.5">
+            <label className="text-sm font-medium text-slate-700">Select Category</label>
+            <div className="relative">
+              <Tag className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+              <select
+                className="w-full pl-10 pr-10 py-2.5 bg-white border border-slate-200 rounded-xl focus:border-blue-500 outline-hidden focus:ring-2 focus:ring-blue-100 appearance-none"
+                value={selectedCategoryId}
+                onChange={(e) => {
+                  setSelectedCategoryId(e.target.value);
+                  setSelectedProductId(''); // Reset product when category changes
+                }}
+              >
+                <option value="">All Categories</option>
+                {categories.map(c => (
+                  <option key={c.id} value={c.id}>{c.name}</option>
+                ))}
+              </select>
+              <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" size={16} />
+            </div>
+          </div>
+
+          <div className="space-y-1.5">
             <label className="text-sm font-medium text-slate-700">Select Product</label>
-            <select 
-              name="productId" 
-              required 
-              className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl focus:border-blue-500 outline-hidden focus:ring-2 focus:ring-blue-100"
-              onChange={(e) => setSelectedProductId(e.target.value)}
-              value={selectedProductId}
-            >
-              <option value="">Choose a product...</option>
-              {products.map(p => (
-                <option key={p.id} value={p.id} disabled={p.stock <= 0}>
-                  {p.name} (Available: {p.stock} @ ${p.sellingPrice})
-                </option>
-              ))}
-            </select>
+            <div className="relative">
+              <Package className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+              <select 
+                name="productId" 
+                required 
+                className="w-full pl-10 pr-10 py-2.5 bg-white border border-slate-200 rounded-xl focus:border-blue-500 outline-hidden focus:ring-2 focus:ring-blue-100 appearance-none"
+                onChange={(e) => setSelectedProductId(e.target.value)}
+                value={selectedProductId}
+                disabled={!selectedCategoryId}
+              >
+                {!selectedCategoryId ? (
+                   <option value="">Please select a category first...</option>
+                ) : (
+                  <>
+                    <option value="">Choose a product...</option>
+                    {filteredProducts.map(p => (
+                      <option key={p.id} value={p.id} disabled={p.stock <= 0}>
+                        {p.name} (Available: {p.stock} @ ${p.sellingPrice})
+                      </option>
+                    ))}
+                  </>
+                )}
+              </select>
+              <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" size={16} />
+            </div>
           </div>
           
           <div className="space-y-1.5">

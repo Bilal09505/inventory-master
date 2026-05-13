@@ -10,6 +10,7 @@ import Purchases from './pages/Purchases';
 import Sales from './pages/Sales';
 import Reports from './pages/Reports';
 import Settings from './pages/Settings';
+import Categories from './pages/Categories';
 import Login from './pages/Login';
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
@@ -39,6 +40,7 @@ export default function App() {
           }>
             <Route index element={<Dashboard />} />
             <Route path="inventory" element={<Inventory />} />
+            <Route path="categories" element={<Categories />} />
             <Route path="customers" element={<Customers />} />
             <Route path="vendors" element={<Vendors />} />
             <Route path="purchases" element={<Purchases />} />
