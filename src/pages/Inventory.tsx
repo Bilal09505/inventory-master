@@ -16,13 +16,13 @@ import { useFirestoreCollection, useFirestoreActions } from '../hooks/useFiresto
 import { Product, Category } from '../types';
 import { Modal, Button, Input } from '../components/UI';
 import { cn } from '../lib/utils';
-import { orderBy, where } from 'firebase/firestore';
+import { orderBy, where, QueryConstraint } from 'firebase/firestore';
 
 export default function Inventory() {
-  const [selectedCategoryId, setSelectedCategoryId] = useState<string>('');
+  const [selectedCategoryId, setSelectedCategoryId] = useState<string>('all');
   
   const productsQuery = useMemo(() => {
-    const q = [orderBy('name')];
+    const q: QueryConstraint[] = [orderBy('name')];
     if (selectedCategoryId && selectedCategoryId !== 'all') {
       q.push(where('category', '==', selectedCategoryId));
     }
@@ -156,13 +156,6 @@ export default function Inventory() {
                     <td colSpan={5} className="px-6 py-4 h-16 bg-slate-50/30"></td>
                   </tr>
                 ))
-              ) : !selectedCategoryId ? (
-                <tr>
-                  <td colSpan={5} className="px-6 py-12 text-center text-slate-400">
-                    <Tag size={48} className="mx-auto mb-4 opacity-20" />
-                    Please select a category to view inventory
-                  </td>
-                </tr>
               ) : filteredProducts.length === 0 ? (
                 <tr>
                   <td colSpan={5} className="px-6 py-12 text-center text-slate-400">

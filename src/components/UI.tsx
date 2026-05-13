@@ -47,11 +47,14 @@ export function Modal({ isOpen, onClose, title, children }: ModalProps) {
   );
 }
 
-interface ButtonProps extends React.ComponentPropsWithoutRef<'button'> {
+interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: 'primary' | 'secondary' | 'danger' | 'ghost';
   size?: 'sm' | 'md' | 'lg';
   isLoading?: boolean;
-  children: React.ReactNode;
+  className?: string;
+  children?: React.ReactNode;
+  onClick?: React.MouseEventHandler<HTMLButtonElement>;
+  type?: 'button' | 'submit' | 'reset';
 }
 
 export function Button({ variant = 'primary', size = 'md', isLoading, className, children, ...props }: ButtonProps) {
@@ -87,9 +90,17 @@ export function Button({ variant = 'primary', size = 'md', isLoading, className,
   );
 }
 
-interface InputProps extends React.ComponentPropsWithoutRef<'input'> {
+interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   label?: string;
   error?: string;
+  className?: string;
+  name?: string;
+  required?: boolean;
+  placeholder?: string;
+  defaultValue?: string | number;
+  type?: string;
+  step?: string;
+  min?: string | number;
 }
 
 export function Input({ label, error, className, ...props }: InputProps) {
