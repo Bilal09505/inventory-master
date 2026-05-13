@@ -1,0 +1,148 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 0. Default Deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // --- Helper Functions ---
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isVerified() {
+      return isSignedIn() && request.auth.token.email_verified == true;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function getUserData(uid) {
+      return get(/databases/$(database)/documents/users/$(uid)).data;
+    }
+
+    function hasRole(role) {
+      return isVerified() && getUserData(request.auth.uid).role == role;
+    }
+
+    function isAdmin() {
+      return isVerified() && (getUserData(request.auth.uid).role == 'admin' || request.auth.token.email == 'mc180406267@gmail.com');
+    }
+
+    function isManager() {
+      return hasRole('manager') || isAdmin();
+    }
+
+    function isStaff() {
+      return isVerified(); // Any verified user is at least staff if they exist in users
+    }
+
+    // --- Validation Blueprints ---
+
+    function isValidUser(data) {
+      return data.keys().hasAll(['uid', 'name', 'email', 'role']) &&
+             data.uid == request.auth.uid &&
+             data.role in ['admin', 'manager', 'staff'] &&
+             data.name is string && data.name.size() > 0 &&
+             data.email is string && data.email.size() > 0;
+    }
+
+    function isValidProduct(data) {
+      return data.keys().hasAll(['name', 'costPrice', 'sellingPrice', 'stock']) &&
+             data.name is string && data.name.size() > 0 &&
+             data.costPrice is number && data.costPrice >= 0 &&
+             data.sellingPrice is number && data.sellingPrice >= 0 &&
+             data.stock is number;
+    }
+
+    function isValidCustomer(data) {
+      return data.keys().hasAll(['name']) &&
+             data.name is string && data.name.size() > 0;
+    }
+
+    function isValidVendor(data) {
+      return data.keys().hasAll(['name']) &&
+             data.name is string && data.name.size() > 0;
+    }
+
+    function isValidPurchase(data) {
+      return data.keys().hasAll(['productId', 'units', 'cost', 'amount', 'date']) &&
+             data.productId is string &&
+             data.units is number && data.units > 0 &&
+             data.cost is number && data.cost >= 0 &&
+             data.amount is number &&
+             data.date is string;
+    }
+
+    function isValidSale(data) {
+      return data.keys().hasAll(['productId', 'units', 'price', 'amount', 'date']) &&
+             data.productId is string &&
+             data.units is number && data.units > 0 &&
+             data.price is number && data.price >= 0 &&
+             data.amount is number &&
+             data.date is string;
+    }
+
+    // --- Collections ---
+
+    match /users/{userId} {
+      allow get: if isVerified() && (request.auth.uid == userId || isAdmin());
+      allow list: if isAdmin();
+      allow create: if isVerified() && request.auth.uid == userId && isValidUser(incoming());
+      allow update: if isVerified() && (request.auth.uid == userId || isAdmin()) && 
+                    (isAdmin() || (incoming().role == existing().role && incoming().uid == existing().uid));
+    }
+
+    match /products/{productId} {
+      allow read: if isVerified();
+      // Allow staff to create products to prevent initial setup friction
+      allow create: if isVerified() && isValidId(productId) && isValidProduct(incoming());
+      allow update: if isVerified() && isValidProduct(incoming()) && (
+        isAdmin() ||
+        (isManager() && incoming().diff(existing()).affectedKeys().hasAny(['name', 'costPrice', 'sellingPrice', 'stock', 'minStock', 'category', 'unitType', 'vendorId', 'imageUrl', 'hsnCode', 'sku', 'barcode', 'updatedAt'])) ||
+        (isStaff() && incoming().diff(existing()).affectedKeys().hasOnly(['stock', 'updatedAt']))
+      );
+      allow delete: if isAdmin();
+    }
+
+    match /customers/{customerId} {
+      allow read: if isVerified();
+      allow create: if isStaff() && isValidId(customerId) && isValidCustomer(incoming());
+      allow update: if isStaff() && isValidCustomer(incoming());
+      allow delete: if isAdmin();
+    }
+
+    match /vendors/{vendorId} {
+      allow read: if isVerified();
+      allow create: if isManager() && isValidId(vendorId) && isValidVendor(incoming());
+      allow update: if isManager() && isValidVendor(incoming());
+      allow delete: if isAdmin();
+    }
+
+    match /purchases/{purchaseId} {
+      allow read: if isVerified();
+      allow create: if isStaff() && isValidId(purchaseId) && isValidPurchase(incoming()) &&
+                    existsAfter(/databases/$(database)/documents/products/$(incoming().productId));
+      allow update: if isAdmin(); // Generally purchases are immutable
+      allow delete: if isAdmin();
+    }
+
+    match /sales/{saleId} {
+      allow read: if isVerified();
+      allow create: if isStaff() && isValidId(saleId) && isValidSale(incoming()) &&
+                    existsAfter(/databases/$(database)/documents/products/$(incoming().productId));
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
+    }
+  }
+}

@@ -1,0 +1,129 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "User profile and role information",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "name": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
+        "role": { "type": "string", "enum": ["admin", "manager", "staff"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "name", "email", "role"]
+    },
+    "Customer": {
+      "title": "Customer",
+      "description": "Customer contact information",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "phone": { "type": "string" },
+        "address": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["name"]
+    },
+    "Vendor": {
+      "title": "Vendor",
+      "description": "Vendor/Supplier information",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "phone": { "type": "string" },
+        "address": { "type": "string" },
+        "category": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["name"]
+    },
+    "Product": {
+      "title": "Product",
+      "description": "Inventory item details",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "hsnCode": { "type": "string" },
+        "name": { "type": "string" },
+        "sku": { "type": "string" },
+        "barcode": { "type": "string" },
+        "costPrice": { "type": "number" },
+        "sellingPrice": { "type": "number" },
+        "stock": { "type": "number" },
+        "minStock": { "type": "number" },
+        "category": { "type": "string" },
+        "unitType": { "type": "string" },
+        "vendorId": { "type": "string" },
+        "imageUrl": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["name", "costPrice", "sellingPrice", "stock"]
+    },
+    "Purchase": {
+      "title": "Purchase",
+      "description": "Inventory purchase transaction",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "productId": { "type": "string" },
+        "vendorId": { "type": "string" },
+        "units": { "type": "number" },
+        "cost": { "type": "number" },
+        "amount": { "type": "number" },
+        "date": { "type": "string", "format": "date-time" },
+        "notes": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["productId", "units", "cost", "amount", "date"]
+    },
+    "Sale": {
+      "title": "Sale",
+      "description": "Product sales transaction",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "productId": { "type": "string" },
+        "customerId": { "type": "string" },
+        "units": { "type": "number" },
+        "price": { "type": "number" },
+        "amount": { "type": "number" },
+        "discount": { "type": "number" },
+        "date": { "type": "string", "format": "date-time" },
+        "paymentStatus": { "type": "string", "enum": ["paid", "partial", "unpaid"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["productId", "units", "price", "amount", "date"]
+    }
+  },
+  "firestore": {
+    "users": {
+      "schema": "User",
+      "description": "Collection of application users"
+    },
+    "customers": {
+      "schema": "Customer",
+      "description": "Collection of clients/customers"
+    },
+    "vendors": {
+      "schema": "Vendor",
+      "description": "Collection of suppliers/vendors"
+    },
+    "products": {
+      "schema": "Product",
+      "description": "Collection of inventory items"
+    },
+    "purchases": {
+      "schema": "Purchase",
+      "description": "Collection of purchase records"
+    },
+    "sales": {
+      "schema": "Sale",
+      "description": "Collection of sales records"
+    }
+  }
+}
